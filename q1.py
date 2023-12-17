@@ -68,60 +68,106 @@ def calculate_loop_distance(path_index):
     return distances[stations[start]][stations[end]]
 
 
-path_lengths = []
-depot_distances = [[], []]
-loop_distances = []
+path_lengths = [0] * 15
+depot_distances = [[0] * 15, [0] * 15]
+loop_distances = [0] * 15
 
 for i in range(15):
     is_x = True
-    path_lengths.append(calculate_path_length(i))
+    path_lengths[i] = calculate_path_length(i)
     for j in range(2):
-        depot_distances[j].append(calculate_depot_distance(i, is_x))
+        depot_distances[j][i] = calculate_depot_distance(i, is_x)
         is_x = False
-    loop_distances.append(calculate_loop_distance(i))
+    loop_distances[i] = calculate_loop_distance(i)
+
+num_of_loops = [[0] * 15, [0] * 15]
+prev = 1
+curr = 1
+for i in range(15):
+    for j in range(2):
+        while (path_lengths[i] * curr + depot_distances[j][i] + loop_distances[i] * (curr - 1)) <= 20:
+            prev = curr
+            curr += 1
+        num_of_loops[j][i] = prev
+
 
 # Create a CPLEX problem
 problem = cplex.Cplex()
 
-objective_coefficients = []
-for i in range(1, 16):
-    for j in range(15):
-        # Coefficients for the terms involving x_i
-        a = path_lengths[j]
-        b1 = depot_distances[0][j]
-        b2 = depot_distances[0][j]
-        c = loop_distances[j]
+x_names = [f"x{i+1}" for i in range(15)]
+z_names = [f"z{i+1}" for i in range(15)]
 
-        objective_coefficients.append((f"x{i}", a * f"z{j+1} + {b1} + {c} * (z{j+1} - 1)"))
+# Add binary variables x
+problem.variables.add(names=x_names, lb=[0]*len(x_names), ub=[1]*len(x_names), types=["B"]*len(x_names))
 
-        # Coefficients for the terms involving (x_i - 1)
-        objective_coefficients.append((f"x{i}", a * f"z{j+1} + {b2} + {c} * (z{j+1} - 1)"))
-
-problem.objective.set_linear(objective_coefficients)
+# Add integer variables z
+problem.variables.add(names=z_names, lb=[0]*len(z_names), ub=[cplex.infinity]*len(z_names), types=["I"]*len(z_names))
 
 
-# Set variable bounds
-variable_names = [f"x{i}" for i in range(1, 16)] + [f"z{j+1}" for j in range(15)]
-variable_types = ['B'] * 15 + ['I'] * 15
-variable_lower_bounds = [0] * (15 + 15)
-variable_upper_bounds = [1] * 15 + [cplex.infinity] * 15
+problem.objective.set_sense(problem.objective.sense.minimize)
 
-problem.variables.add(names=variable_names, types=variable_types, lb=variable_lower_bounds, ub=variable_upper_bounds)
+objective_function = {}
+for i in range(15):
+    # Summing up the coefficients for each x_names[i]
+    if x_names[i] not in objective_function:
+        objective_function[x_names[i]] = 0
+    objective_function[x_names[i]] += depot_distances[0][i] - depot_distances[1][i]
 
-# Add individual constraints
-for i in range(1, 16):
-    constraint_coefficients = [(f"x{i}", a * f"z{j+1} + {depot_distances[j][0]} + {loop_distances[j]} * (z{j+1} - 1)") for j, a in enumerate(path_lengths)]
-    problem.linear_constraints.add(lin_expr=[constraint_coefficients], senses=['L'], rhs=[20])
+# Add the offset
+problem.objective.set_offset(sum(depot_distances[1]))
 
-# Add global constraints
-problem.linear_constraints.add(lin_expr=[[variable_names, [1] * 15]], senses=['L'], rhs=[10])
-problem.linear_constraints.add(lin_expr=[[variable_names, [1] * 15]], senses=['G'], rhs=[5])
-
-# Solve the problem
-problem.solve()
-
-# Get solution information
-print("Objective Value:", problem.solution.get_objective_value())
-print("Solution:", problem.solution.get_values())
+# set the linear part of the objective function
+problem.objective.set_linear(objective_function.items())
 
 
+
+# for simplicity
+b = depot_distances
+
+for i in range(15):
+
+    rhs = 20
+    coeff = b[0][i] - b[1][i]
+    rhs = rhs - b[1][i]
+
+    problem.linear_constraints.add(
+        lin_expr=[[[x_names[i]], [coeff]]],
+        senses=["L"],
+        rhs=[rhs]
+    )
+
+problem.linear_constraints.add(
+    lin_expr=[[x_names, [1] * len(x_names)]],
+    senses=["L"],
+    rhs=[10]
+)
+
+problem.linear_constraints.add(
+    lin_expr=[[x_names, [1] * len(x_names)]],
+    senses=["G"],
+    rhs=[5]
+)
+
+
+
+
+
+try:
+    # Solve the problem
+    problem.solve()
+
+    # Access the solution
+    solution = problem.solution
+
+    # Print solution status
+    print("Solution status:", solution.get_status())
+
+    # Print the solution
+    solution = problem.solution
+    for name in x_names:
+        print(f"{name}: {solution.get_values(name)}")
+
+    print("Objective value:", solution.get_objective_value())
+
+except cplex.CplexError as e:
+    print("Cplex Error:", e)
