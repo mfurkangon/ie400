@@ -113,9 +113,10 @@ for i in range(15):
     loop_distances[i] = calculate_loop_distance(i)
 
 num_of_loops = [[0] * 15, [0] * 15] # The number of times we can loop through one path considering the restriction of 4h service per day (20h operation per day)
-prev = 1
-curr = 1
+
 for i in range(15):
+    prev = 0
+    curr = 0
     for j in range(2):
         while (path_lengths[i] * curr + depot_distances[j][i] + loop_distances[i] * (curr - 1)) <= 20:
             prev = curr
