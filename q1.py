@@ -135,6 +135,7 @@ problem.variables.add(names=x_names, lb=[0]*len(x_names), ub=[1]*len(x_names), t
 # Set objective function type
 problem.objective.set_sense(problem.objective.sense.minimize)
 
+# OBJECTIVE FUNCTIN = min (asssignedToXiLength - assignedToYiLength) * isAssignToXi
 objective_function = {} # This is used to hold objective the function's elements
 for i in range(15):
     # Summing up the coefficients for each x_names[i]
@@ -151,6 +152,8 @@ problem.objective.set_offset(sum(depot_distances[1]))
 problem.objective.set_linear(objective_function.items())
 
 # Loop to add all the constraints
+
+"""
 for i in range(15):
 
     rhs = 20
@@ -162,6 +165,7 @@ for i in range(15):
         senses=["L"],
         rhs=[rhs]
     )
+"""
 
 
 # Global constraints that do not requre looping can be added outside the loop like this
@@ -178,7 +182,8 @@ problem.linear_constraints.add(
 )
 
 
-
+print("Number of loops", num_of_loops)
+print("path lengths:",path_lengths)
 
 
 try:
@@ -190,6 +195,7 @@ try:
 
     # Print solution status
     print("Solution status:", solution.get_status())
+
 
     # Print the solution
     solution = problem.solution
