@@ -206,3 +206,6 @@ try:
 
 except cplex.CplexError as e:
     print("Cplex Error:", e)
+
+
+print("------------------END OF Q1------------------------------")
