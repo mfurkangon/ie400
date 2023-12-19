@@ -39,14 +39,6 @@ paths = [
 # Usage example: distance from station A to station F = distances[station['A'], station['F']]
 station = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7}
 
-counts = [0] * len(station)
-for path in paths:
-    counts[station[path[0]]] += 1
-    if path[0] in ['A', 'B']:
-        print (paths.index(path), path[0])
-
-print(counts)
-
 
 def calculate_path_length(path_index):
     """ 
@@ -161,8 +153,6 @@ problem.objective.set_offset(sum(depot_distances[1]))
 # set the linear part of the objective function
 problem.objective.set_linear(objective_function.items())
 
-
-
 # for simplicity
 a = path_lengths
 b = depot_distances
@@ -200,17 +190,34 @@ problem.linear_constraints.add(
 x_a = ['x1', 'x7', 'x11', 'x12']
 x_b = ['x2', 'x8', 'x13', 'x15']
 
+# At most 3 start from X
 problem.linear_constraints.add(
     lin_expr=[[x_a, [1] * len(x_a)]],
     senses=["L"],
     rhs=[3]
 )
 
+# At least 1 starts from X (equivalent to at most 3 start from Y)
+problem.linear_constraints.add(
+    lin_expr=[[x_a, [1] * len(x_a)]],
+    senses=["G"],
+    rhs=[1]
+)
+
+# At most 3 start from X
 problem.linear_constraints.add(
     lin_expr=[[x_b, [1] * len(x_b)]],
     senses=["L"],
     rhs=[3]
 )
+
+# At least 1 starts from X (equivalent to at most 3 start from Y)
+problem.linear_constraints.add(
+    lin_expr=[[x_b, [1] * len(x_b)]],
+    senses=["G"],
+    rhs=[1]
+)
+
 
 try:
     # Solve the problem
