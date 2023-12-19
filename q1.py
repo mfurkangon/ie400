@@ -39,6 +39,15 @@ paths = [
 # Usage example: distance from station A to station F = distances[station['A'], station['F']]
 station = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7}
 
+counts = [0] * len(station)
+for path in paths:
+    counts[station[path[0]]] += 1
+    if path[0] in ['A', 'B']:
+        print (paths.index(path), path[0])
+
+print(counts)
+
+
 def calculate_path_length(path_index):
     """ 
     Args:
@@ -155,20 +164,24 @@ problem.objective.set_linear(objective_function.items())
 
 
 # for simplicity
+a = path_lengths
 b = depot_distances
+c = loop_distances
+d = num_of_loops
 
 # Loop to add all the constraints
 for i in range(15):
 
     rhs = 20
-    coeff = b[0][i] - b[1][i]
-    rhs = rhs - b[1][i]
+    coeff = (a[i] + c[i]) * (d[0][i] - d[1][i]) + b[0][i] - b[1][i]
+    offset = (a[i] + c[i]) * d[1][i] + b[1][i] - c[i]
+    rhs = rhs - offset
 
     problem.linear_constraints.add(
         lin_expr=[[[x_names[i]], [coeff]]],
         senses=["L"],
         rhs=[rhs]
-    )
+    ) 
 
 
 # Global constraints that do not requre looping can be added outside the loop like this
@@ -184,9 +197,20 @@ problem.linear_constraints.add(
     rhs=[5]
 )
 
+x_a = ['x1', 'x7', 'x11', 'x12']
+x_b = ['x2', 'x8', 'x13', 'x15']
 
+problem.linear_constraints.add(
+    lin_expr=[[x_a, [1] * len(x_a)]],
+    senses=["L"],
+    rhs=[3]
+)
 
-
+problem.linear_constraints.add(
+    lin_expr=[[x_b, [1] * len(x_b)]],
+    senses=["L"],
+    rhs=[3]
+)
 
 try:
     # Solve the problem
