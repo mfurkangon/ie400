@@ -1,14 +1,6 @@
 from q1 import * # no need to use q1. before vars and functions now
 import cplex
 
-x_to_stations = x_to_stations
-y_to_stations = y_to_stations
-
-distances = distances
-paths = paths
-
-station = station
-
 model=cplex.Cplex()
 # define the coefficients of the objective function
 objective = [1e6, 8e5, 3.5e5, 7.5e5, 2.5e5, 2e4, 1e5]
