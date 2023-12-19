@@ -39,6 +39,15 @@ paths = [
 # Usage example: distance from station A to station F = distances[station['A'], station['F']]
 station = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7}
 
+counts = [0] * len(station)
+for path in paths:
+    counts[station[path[0]]] += 1
+    if path[0] in ['A', 'B']:
+        print (paths.index(path), path[0])
+
+print(counts)
+
+
 def calculate_path_length(path_index):
     """ 
     Args:
@@ -113,14 +122,16 @@ for i in range(15):
     loop_distances[i] = calculate_loop_distance(i)
 
 num_of_loops = [[0] * 15, [0] * 15] # The number of times we can loop through one path considering the restriction of 4h service per day (20h operation per day)
-prev = 1
-curr = 1
+
 for i in range(15):
     for j in range(2):
+        prev = 0
+        curr = 0
         while (path_lengths[i] * curr + depot_distances[j][i] + loop_distances[i] * (curr - 1)) <= 20:
             prev = curr
             curr += 1
         num_of_loops[j][i] = prev
+
 
 
 # Create a CPLEX problem
@@ -135,7 +146,6 @@ problem.variables.add(names=x_names, lb=[0]*len(x_names), ub=[1]*len(x_names), t
 # Set objective function type
 problem.objective.set_sense(problem.objective.sense.minimize)
 
-# OBJECTIVE FUNCTIN = min (asssignedToXiLength - assignedToYiLength) * isAssignToXi
 objective_function = {} # This is used to hold objective the function's elements
 for i in range(15):
     # Summing up the coefficients for each x_names[i]
@@ -151,21 +161,27 @@ problem.objective.set_offset(sum(depot_distances[1]))
 # set the linear part of the objective function
 problem.objective.set_linear(objective_function.items())
 
-# Loop to add all the constraints
 
-"""
+
+# for simplicity
+a = path_lengths
+b = depot_distances
+c = loop_distances
+d = num_of_loops
+
+# Loop to add all the constraints
 for i in range(15):
 
     rhs = 20
-    coeff = depot_distances[0][i] - depot_distances[1][i]
-    rhs = rhs - depot_distances[1][i]
+    coeff = (a[i] + c[i]) * (d[0][i] - d[1][i]) + b[0][i] - b[1][i]
+    offset = (a[i] + c[i]) * d[1][i] + b[1][i] - c[i]
+    rhs = rhs - offset
 
     problem.linear_constraints.add(
         lin_expr=[[[x_names[i]], [coeff]]],
         senses=["L"],
         rhs=[rhs]
-    )
-"""
+    ) 
 
 
 # Global constraints that do not requre looping can be added outside the loop like this
@@ -181,10 +197,20 @@ problem.linear_constraints.add(
     rhs=[5]
 )
 
+x_a = ['x1', 'x7', 'x11', 'x12']
+x_b = ['x2', 'x8', 'x13', 'x15']
 
-print("Number of loops", num_of_loops)
-print("path lengths:",path_lengths)
+problem.linear_constraints.add(
+    lin_expr=[[x_a, [1] * len(x_a)]],
+    senses=["L"],
+    rhs=[3]
+)
 
+problem.linear_constraints.add(
+    lin_expr=[[x_b, [1] * len(x_b)]],
+    senses=["L"],
+    rhs=[3]
+)
 
 try:
     # Solve the problem
@@ -195,7 +221,6 @@ try:
 
     # Print solution status
     print("Solution status:", solution.get_status())
-
 
     # Print the solution
     solution = problem.solution
