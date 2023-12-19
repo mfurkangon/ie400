@@ -115,13 +115,14 @@ for i in range(15):
 num_of_loops = [[0] * 15, [0] * 15] # The number of times we can loop through one path considering the restriction of 4h service per day (20h operation per day)
 
 for i in range(15):
-    prev = 0
-    curr = 0
     for j in range(2):
+        prev = 0
+        curr = 0
         while (path_lengths[i] * curr + depot_distances[j][i] + loop_distances[i] * (curr - 1)) <= 20:
             prev = curr
             curr += 1
         num_of_loops[j][i] = prev
+
 
 
 # Create a CPLEX problem
