@@ -116,7 +116,7 @@ num_of_loops = [[0] * 15, [0] * 15] # The number of times we can loop through on
 
 for i in range(15):
     prev = 0
-    curr = 0
+    curr = 0                          
     for j in range(2):
         while (path_lengths[i] * curr + depot_distances[j][i] + loop_distances[i] * (curr - 1)) <= 20:
             prev = curr
