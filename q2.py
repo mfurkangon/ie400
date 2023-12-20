@@ -3,7 +3,12 @@ import cplex
 
 model=cplex.Cplex()
 #Decision Variables
-
+"""
+    WE NEED TWO MORE CONSTANS
+    THOSE ARE:
+    ## isAtNode(ijh) = THIS SHOWS RATHER THE TRAIN i is AT NODE j at the hour h (BINARY)
+    ## timeToReachNode(ij) THIS  GIVES THE TIME TO REACH NEXT NODE FROM j FOR THE THE TRAIN i
+    """
 #Ti: Train type assigned to path i 0: diesel, 1: electical, i = 1,...,15
 T = [f'T{i+1}' for i in range(15)]
 T_types = ['B']*15
@@ -37,6 +42,7 @@ L = [f'L{i+1}{j+1}{h+1}' for i in range(15) for j in range(8) for h in range(20)
 L_types = ['B']*15*8*20
 model.variables.add(names=L, types=L_types)
 
+#THIS IS CONSTANT
 #Fih: Is train i in depot at hour h, i = 1,....,15, h = 1,....,20
 F = [f'F{i+1}{h+1}' for i in range(15) for h in range(20)]
 F_types = ['B']*15*20
@@ -49,6 +55,7 @@ H_lower_bound = [0]*15*20
 H_upper_bound = [8]*15*20
 model.variables.add(names=H, types=H_types, lb=H_lower_bound, ub=H_upper_bound)
 
+#THIS IS CCONSTANT
 #Wi: Total working hour of train i
 W = [f'W{i+1}' for i in range(15)]
 W_types = ['I']*15
