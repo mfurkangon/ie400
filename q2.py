@@ -1,5 +1,6 @@
 from q1 import * # no need to use q1. before vars and functions now
 import cplex
+import numpy as np
 
 #Parameters
 # calculate total working hours for each train
@@ -11,6 +12,42 @@ for i in range(15):
         total_working_hours[i] += x_to_stations[station[paths[i][0]]] + path_lengths[i]*num_of_loops[0][i] + x_to_stations[station[paths[i][-1]]]
     else:
         total_working_hours[i] += y_to_stations[station[paths[i][0]]] + path_lengths[i]*num_of_loops[0][i] + y_to_stations[station[paths[i][-1]]]
+
+# create a 3D array showing is train i at node j  at hour h 
+        #9th node = Depot X, 10th node = Depot Y
+
+# add being in depot nodes
+I = np.zeros((15, 10, 20), int)
+for i in range(15):
+    if assigned_depots[i]:
+        I[i][8][0] = 1
+    else:
+        I[i][9][0] = 1
+
+# add paths to the I array
+for i in range(15):
+    h = 0
+    t = 0
+    while t < num_of_loops[int(assigned_depots[i])][i]:
+        for node in paths[i]:
+            # from depot
+            if not h:
+                if assigned_depots[i]:
+                    h += x_to_stations[station[node]]
+                    prev = node
+                else:
+                    h += y_to_stations[station[node]]
+                    prev = node
+                I[i][station[node]][h]=1 
+            # from an ordinary station
+            else:
+                h += distances[station[prev]][station[node]]
+                prev = node
+            I[i][station[node]][h]=1
+        t += 1
+
+print(I[0])
+
 
 #create the cplex model and add the decision variables, objective function and the constraints.
 model=cplex.Cplex()
@@ -168,12 +205,13 @@ for i in range(15):
    
 # Add Cj = max(sum over i and h(Lijh)) for each j
 for j in range(8):
-    Cj = [f'C{j+1}']
+    Cj = f'C{j+1}'
     Lijh = [f'L{i+1}{j+1}{h+1}' for i in range(15) for h in range(20)]
 
     # Coefficients for Cj and Lijh in the linear term
-    lin_expr = [[Cj + Lijh, [1] + [-1 for _ in range(len(Lijh))]]]
-    
+    #lin_expr = [[Cj + Lijh, [1] + [-1 for _ in range(len(Lijh))]]]
+    lin_expr = [(Cj, 1)] + [(-1, Lijh[i][h]) for i in range(15) for h in range(20)]
+
     model.linear_constraints.add(
         lin_expr=lin_expr,
         senses=['E'],  # E for equality
