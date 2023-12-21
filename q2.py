@@ -45,9 +45,31 @@ for i in range(15):
                 prev = node
             I[i][station[node]][h]=1
         t += 1
+    while h<20:
+        if assigned_depots[i]:
+            I[i][8][h] = 1
+        else:
+            I[i][9][h] = 1
+        h += 1
 
-print(I[0])
 
+# Initialize Rij array
+#R = np.zeros((15, 8, 20), int)
+#def find_next_occurrence(Iijh, i, j, h):
+#    oldh = h
+#    while h < 20:
+#        for j in range(8):
+#            if Iijh[i, j, h] == 1:
+#                return h-oldh
+#        h += 1
+#
+#    # If no next occurrence is found, return -1 or handle it as needed
+#    return -1
+## Populate Rij array based on I array
+#for i,j,h in range(15,8,20):
+#    R[i][j][h] = find_next_occurrence(I, i, j, h)
+## Display Rijh array
+#print(R[0])
 
 #create the cplex model and add the decision variables, objective function and the constraints.
 model=cplex.Cplex()
@@ -93,27 +115,13 @@ I = [f'I{i+1}{j+1}{h+1}' for i in range(15) for j in range(8) for h in range(20)
 I_types = ['B']*15*8*20
 model.variables.add(names=I, types=I_types)
 
+#CONSTANT
 ## Rij: TIME TO REACH NEXT NODE FROM j FOR THE THE TRAIN i, i = 1,.....,15, j = 1,....,8
-R = [f'R{i+1}{j+1}' for i in range(15) for j in range(8)]
-R_types = ['I']*15*8
-R_lower_bound = [0]*15*8
-R_upper_bound = [3]*15*8 #maximum distance is 3 in distances.txt
-model.variables.add(names=R, types=R_types, lb=R_lower_bound, ub=R_upper_bound)
-
-
-#THIS IS CONSTANT
-#Fih: Is train i in depot at hour h, i = 1,....,15, h = 1,....,20
-#F = [f'F{i+1}{h+1}' for i in range(15) for h in range(20)]
-#F_types = ['B']*15*20
-#model.variables.add(names=F, types=F_types)
-
-#THIS IS CCONSTANT
-#Wi: Total working hour of train i
-#W = [f'W{i+1}' for i in range(15)]
-#W_types = ['I']*15
-#W_lower_bound = [0]*15
-#W_upper_bound = [20]*15
-#model.variables.add(names=W, types=W_types, lb=W_lower_bound, ub=W_upper_bound)
+#R = [f'R{i+1}{j+1}' for i in range(15) for j in range(8)]
+#R_types = ['I']*15*8
+#R_lower_bound = [0]*15*8
+#R_upper_bound = [3]*15*8 #maximum distance is 3 in distances.txt
+#model.variables.add(names=R, types=R_types, lb=R_lower_bound, ub=R_upper_bound)
 
 #Objective Function
 objective_function = {}
@@ -145,41 +153,44 @@ model.objective.set_offset(offset)
 
 #Constraints
 
-for i in range(15):
-    Ti = f'T{i+1}'
-    Hih = [f'H{i+1}{h+1}' for h in range(20)]
-    
-    # Coefficients for Ti and Hih in the quadratic term
-    quad_expr = [[Hih[j], 1, Ti, 1] for j in range(20)]
-    
-    # Coefficients for Ti and Hih in the linear term
-    lin_expr = [[Hih + [Ti], [0] + [-1 for _ in range(20)]]]
-    
-    model.quadratic_constraints.add(
-        quad_expr=quad_expr,
-        lin_expr=lin_expr,
-        sense='L',
-        rhs=8
-    )
-print("problem?")
+#for i in range(15):
+#    Ti = f'T{i+1}'
+#    Hih = [f'H{i+1}{h+1}' for h in range(20)]
+#    
+#    # Coefficients for Ti and Hih in the quadratic term
+#    quad_expr = [[Hih[j], 1, Ti, 1] for j in range(20)]
+#    
+#    # Coefficients for Ti and Hih in the linear term
+#    lin_expr = [[Hih + [Ti], [0] + [-1 for _ in range(20)]]]
+#    
+#    model.quadratic_constraints.add(
+#        quad_expr=quad_expr,
+#        lin_expr=lin_expr,
+#        sense='L',
+#        rhs=8
+#    )
+
 # Add Lijh <= Ti*Iijh
 for i in range(15):
-    Ti = f'T{i+1}'
-    Lijh = [f'L{i+1}{j+1}{h+1}' for j in range(8) for h in range(20)]
-    Iijh = [f'I{i+1}{j+1}{h+1}' for j in range(8) for h in range(20)]
+    for j in range(8):
+        for h in range(20):
+            Ti = f'T{i+1}'
+            Lijh = f'L{i+1}{j+1}{h+1}'
+    #Iijh = [f'I{i+1}{j+1}{h+1}' for j in range(8) for h in range(20)]
     # Coefficients for Ti, Lijh, and Iijh in the quadratic term
-    qmat = [[Lijh + [Ti] + Iijh, [1] + [-1] + [1 for _ in range(len(Iijh))]]]
-    
+            
+            #qmat = [[Lijh + Ti + I[i][j][h], [1] + [-1] + [1]]]
+
     # Coefficients for Ti, Lijh, and Iijh in the linear term
-    lin_expr = [[Lijh + [Ti] + Iijh, [1] + [0] + [0 for _ in range(len(Iijh))]]]
-    
-    model.quadratic_constraints.add(
-        quad_expr=qmat,
-        lin_expr=lin_expr,
-        sense='L',
-        rhs=0
-    )
- 
+            lin_expr = [[Lijh + Ti + I[i][j][h], [1] + [0] + [0]]]
+            print("problem")
+            model.linear_constraints.add(
+                lin_expr=lin_expr,
+                senses=['L'],
+                rhs=0
+            )
+
+print("problem?")
 # Add Ti*Iijh*(Hih-Rij) <= 8
 for i in range(15):
     Ti = f'T{i+1}'
