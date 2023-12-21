@@ -54,22 +54,15 @@ for i in range(15):
 
 
 # Initialize Rij array
-#R = np.zeros((15, 8, 20), int)
-#def find_next_occurrence(Iijh, i, j, h):
-#    oldh = h
-#    while h < 20:
-#        for j in range(8):
-#            if Iijh[i, j, h] == 1:
-#                return h-oldh
-#        h += 1
-#
-#    # If no next occurrence is found, return -1 or handle it as needed
-#    return -1
-## Populate Rij array based on I array
-#for i,j,h in range(15,8,20):
-#    R[i][j][h] = find_next_occurrence(I, i, j, h)
-## Display Rijh array
-#print(R[0])
+R = np.zeros((15, 8), int)
+for i in range(15):
+    j = 0
+    while j < len(paths[i])-1:
+        R[i][station[paths[i][j]]] = distances[station[paths[i][j]]][station[paths[i][j+1]]]
+        j += 1
+    R[i][station[paths[i][j]]] = distances[station[paths[i][j]]][station[paths[i][0]]]
+print(R[0])
+
 
 #create the cplex model and add the decision variables, objective function and the constraints.
 model=cplex.Cplex()
