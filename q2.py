@@ -160,22 +160,13 @@ model.objective.set_offset(offset)
 #        rhs=8
 #    )
 
-for i in range (15):
-    for j in range(8):
-        for h in range(20):
-            Ti = f'T{i+1}'
-            Lijh = f'L{i+1}{j+1}{h+1}'
+# Add Lijh-Ti*Iijh <= 0
+model.linear_constraints.add(
+lin_expr=[[[f'T{i+1}', f'L{i+1}{j+1}{h+1}'],[-I[i][j][h], 1]] for i in range(15) for j in range(8) for h in range(20)],
+senses=['L']*15*8*20,
+rhs=[0]*15*8*20
+)
             
-            model.linear_constraints.add(
-            lin_expr=[[[Ti, Lijh], [-I[i][j][h],1]]],
-            senses=['L'],
-            rhs=[0]
-            )
-            
-
-print('LAAAAAn')
-
-print("problem?")
 # Add Ti*Iijh*(Hih-Rij) <= 8
 for i in range(15):
     Ti = f'T{i+1}'
