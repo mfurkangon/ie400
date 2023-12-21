@@ -61,8 +61,6 @@ for i in range(15):
         R[i][station[paths[i][j]]] = distances[station[paths[i][j]]][station[paths[i][j+1]]]
         j += 1
     R[i][station[paths[i][j]]] = distances[station[paths[i][j]]][station[paths[i][0]]]
-print(R[0])
-
 
 #create the cplex model and add the decision variables, objective function and the constraints.
 model=cplex.Cplex()
@@ -104,9 +102,9 @@ H_upper_bound = [8]*15*20
 model.variables.add(names=H, types=H_types, lb=H_lower_bound, ub=H_upper_bound)
 
 #Iijh: Is train i at node j at hour h, i = 1,....,15, j = 1,....,8, h = 1,....,20
-I = [f'I{i+1}{j+1}{h+1}' for i in range(15) for j in range(8) for h in range(20)]
-I_types = ['B']*15*8*20
-model.variables.add(names=I, types=I_types)
+#I = [f'I{i+1}{j+1}{h+1}' for i in range(15) for j in range(8) for h in range(20)]
+#I_types = ['B']*15*8*20
+#model.variables.add(names=I, types=I_types)
 
 #CONSTANT
 ## Rij: TIME TO REACH NEXT NODE FROM j FOR THE THE TRAIN i, i = 1,.....,15, j = 1,....,8
@@ -143,7 +141,6 @@ model.objective.set_sense(model.objective.sense.minimize)
 model.objective.set_linear(objective_function.items())
 model.objective.set_offset(offset)
 
-
 #Constraints
 
 #for i in range(15):
@@ -163,25 +160,20 @@ model.objective.set_offset(offset)
 #        rhs=8
 #    )
 
-# Add Lijh <= Ti*Iijh
-for i in range(15):
+for i in range (15):
     for j in range(8):
         for h in range(20):
             Ti = f'T{i+1}'
             Lijh = f'L{i+1}{j+1}{h+1}'
-    #Iijh = [f'I{i+1}{j+1}{h+1}' for j in range(8) for h in range(20)]
-    # Coefficients for Ti, Lijh, and Iijh in the quadratic term
             
-            #qmat = [[Lijh + Ti + I[i][j][h], [1] + [-1] + [1]]]
-
-    # Coefficients for Ti, Lijh, and Iijh in the linear term
-            lin_expr = [[Lijh + Ti + I[i][j][h], [1] + [0] + [0]]]
-            print("problem")
             model.linear_constraints.add(
-                lin_expr=lin_expr,
-                senses=['L'],
-                rhs=0
+            lin_expr=[[[Ti, Lijh], [-I[i][j][h],1]]],
+            senses=['L'],
+            rhs=[0]
             )
+            
+
+print('LAAAAAn')
 
 print("problem?")
 # Add Ti*Iijh*(Hih-Rij) <= 8
