@@ -101,18 +101,6 @@ H_lower_bound = [0]*15*20
 H_upper_bound = [8]*15*20
 model.variables.add(names=H, types=H_types, lb=H_lower_bound, ub=H_upper_bound)
 
-#Iijh: Is train i at node j at hour h, i = 1,....,15, j = 1,....,8, h = 1,....,20
-#I = [f'I{i+1}{j+1}{h+1}' for i in range(15) for j in range(8) for h in range(20)]
-#I_types = ['B']*15*8*20
-#model.variables.add(names=I, types=I_types)
-
-#CONSTANT
-## Rij: TIME TO REACH NEXT NODE FROM j FOR THE THE TRAIN i, i = 1,.....,15, j = 1,....,8
-#R = [f'R{i+1}{j+1}' for i in range(15) for j in range(8)]
-#R_types = ['I']*15*8
-#R_lower_bound = [0]*15*8
-#R_upper_bound = [3]*15*8 #maximum distance is 3 in distances.txt
-#model.variables.add(names=R, types=R_types, lb=R_lower_bound, ub=R_upper_bound)
 
 #Objective Function
 objective_function = {}
@@ -143,30 +131,53 @@ model.objective.set_offset(offset)
 
 #Constraints
 
-#for i in range(15):
-#    Ti = f'T{i+1}'
-#    Hih = [f'H{i+1}{h+1}' for h in range(20)]
-#    
-#    # Coefficients for Ti and Hih in the quadratic term
-#    quad_expr = [[Hih[j], 1, Ti, 1] for j in range(20)]
-#    
-#    # Coefficients for Ti and Hih in the linear term
-#    lin_expr = [[Hih + [Ti], [0] + [-1 for _ in range(20)]]]
-#    
-#    model.quadratic_constraints.add(
-#        quad_expr=quad_expr,
-#        lin_expr=lin_expr,
-#        sense='L',
-#        rhs=8
-#    )
 
+""""
 # Add Lijh-Ti*Iijh <= 0
 model.linear_constraints.add(
 lin_expr=[[[f'T{i+1}', f'L{i+1}{j+1}{h+1}'],[-I[i][j][h], 1]] for i in range(15) for j in range(8) for h in range(20)],
 senses=['L']*15*8*20,
 rhs=[0]*15*8*20
 )
-            
+"""
+# Constraints
+# Assuming I[i][j][h] is a constant value, replace it with the actual constant value in the constraint expression
+constant_value = 1.0  # Replace this with the actual constant value
+
+# Constraint: Lijh - Ti*I[i][j][h] <= 0
+for i in range(15):
+    for j in range(8):
+        for h in range(20):
+            constraint_expr = [
+                [f'L{i+1}{j+1}{h+1}', f'T{i+1}'],
+                [1.0, -constant_value * I[i][j][h]]
+            ]
+            model.linear_constraints.add(
+                lin_expr=[constraint_expr],
+                senses=['L'],
+                rhs=[0.0]
+            )
+
+# Assuming I[i][j][h], H[i][h], and R[i][j] are constants, replace them with the actual constant values
+
+# Constraint: Ti*Iijh*(Hih-Rij) <= 8
+# Assuming I[i][j][h] and R[i][j] are constants, replace them with the actual constant values
+
+# Constraint: Ti*Iijh*(Hih-Rij) <= 8
+
+for i in range(15):
+    for j in range(8):
+        for h in range(20):
+            constraint_expr = [
+                [f'T{i+1}', f'H{i+1}{h+1}'],
+                [constant_value * I[i][j][h], -constant_value * R[i][j]]
+            ]
+            model.linear_constraints.add(
+                lin_expr=[constraint_expr],
+                senses=['L'],
+                rhs=[8.0]
+            )
+
 # Add Ti*Iijh*(Hih-Rij) <= 8
 for i in range(15):
     Ti = f'T{i+1}'
